@@ -8,9 +8,20 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var redSliderValue = Double.random(in: 0...255)
-    @State private var greenSliderValue = Double.random(in: 0...255)
-    @State private var blueSliderValue = Double.random(in: 0...255)
+    
+    private static let redValue = Double.random(in: 0...255)
+    private static let greenValue = Double.random(in: 0...255)
+    private static let blueValue = Double.random(in: 0...255)
+    
+    @State private var redSliderValue = redValue
+    @State private var greenSliderValue = greenValue
+    @State private var blueSliderValue = blueValue
+    
+    @State private var redSliderTF = String(lround(redValue))
+    @State private var greenSliderTF = String(lround(greenValue))
+    @State private var blueSliderTF = String(lround(blueValue))
+    
+    @State private var isAlertPresent = false
     
     @FocusState private var isFocused: Bool
     
@@ -30,25 +41,41 @@ struct ContentView: View {
             
             HStack {
                 VStack(spacing: 40) {
-                    ColoredSliderView(value: $redSliderValue, color: .red)
-                    ColoredSliderView(value: $greenSliderValue, color: .green)
-                    ColoredSliderView(value: $blueSliderValue, color: .blue)
+                    ColorSliderView(
+                        value: $redSliderValue,
+                        text: $redSliderTF,
+                        color: .red
+                    )
+                    ColorSliderView(
+                        value: $greenSliderValue,
+                        text: $greenSliderTF,
+                        color: .green
+                    )
+                    ColorSliderView(
+                        value: $blueSliderValue,
+                        text: $blueSliderTF,
+                        color: .blue
+                    )
                 }
                 
                 VStack(spacing: 40) {
-                    TextFieldView(value: $redSliderValue)
+                    TextFieldView(text: $redSliderTF)
                         .focused($isFocused)
-                    TextFieldView(value: $greenSliderValue)
+                    TextFieldView(text: $greenSliderTF)
                         .focused($isFocused)
-                    TextFieldView(value: $blueSliderValue)
+                    TextFieldView(text: $blueSliderTF)
                         .focused($isFocused)
                 }
                 .toolbar {
                     ToolbarItemGroup(placement: .keyboard) {
                         Spacer()
-                        Button("Done", action: {
-                            isFocused = false
-                        })
+                        Button("Done", action: validateTF)
+                            .alert(
+                                "Wrong format",
+                                isPresented: $isAlertPresent,
+                                actions: { Button("OK", action: correctTF) },
+                                message: { Text("Value can be only numeric") }
+                            )
                     }
                 }
             }
@@ -60,30 +87,92 @@ struct ContentView: View {
         }
         .padding()
     }
+    
+    private func validateTF() {
+        validateRedTF()
+        validateGreenTF()
+        validateBlueTF()
+    }
+    
+    private func validateRedTF() {
+        guard let enteredValue = Double(redSliderTF) else { isAlertPresent.toggle()
+            return
+        }
+        
+        if !(0.0...255.0).contains(enteredValue) {
+            isAlertPresent.toggle()
+        } else {
+            redSliderValue = enteredValue
+        }
+    }
+    
+    private func validateGreenTF() {
+        guard let enteredValue = Double(greenSliderTF) else { isAlertPresent.toggle()
+            return
+        }
+        
+        if !(0.0...255.0).contains(enteredValue) {
+            isAlertPresent.toggle()
+        } else {
+            greenSliderValue = enteredValue
+        }
+    }
+    
+    private func validateBlueTF() {
+        guard let enteredValue = Double(blueSliderTF) else { isAlertPresent.toggle()
+            return
+        }
+        
+        if !(0.0...255.0).contains(enteredValue) {
+            isAlertPresent.toggle()
+        } else {
+            blueSliderValue = enteredValue
+        }
+    }
+    
+    private func correctTF() {
+        correctRedTF()
+        correctGreenTF()
+        correctBlueTF()
+    }
+    
+    private func correctRedTF() {
+        redSliderTF = String(lround(redSliderValue))
+    }
+    
+    private func correctGreenTF() {
+        greenSliderTF = String(lround(greenSliderValue))
+    }
+    
+    private func correctBlueTF() {
+        blueSliderTF = String(lround(blueSliderValue))
+    }
 }
 
 // MARK: - Slider with value label
-struct ColoredSliderView: View {
+struct ColorSliderView: View {
     @Binding var value: Double
+    @Binding var text: String
     
     let color: Color
     
     var body: some View {
-        HStack() {
+        HStack {
             Text("\(lround(value))")
                 .frame(width: 45, height: 30)
             Slider(value: $value, in: 0...255, step: 1)
-                .tint(color)
+                .onChange(of: value, perform: { text = String(lround($0)) })
+            .tint(color)
         }
     }
 }
 
 // MARK: - Text field
 struct TextFieldView: View {
-    @Binding var value: Double
+    @Binding var text: String
     
     var body: some View {
-        TextField("", value: $value, formatter: NumberFormatter())
+        TextField("", text: $text)
             .textFieldStyle(.roundedBorder)
             .frame(width: 45, height: 30)
             .multilineTextAlignment(.center)
